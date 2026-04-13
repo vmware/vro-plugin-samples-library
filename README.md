@@ -1,12 +1,10 @@
 
-# Single-Node vSphere Supervisor Deployment Automation
+# Powershell Scripts for VMware vSphere Kubernetes Service (VKS)
 
 [![PowerShell](https://img.shields.io/badge/PowerShell-7.4%2B-blue.svg)](https://github.com/PowerShell/PowerShell)
 [![License](https://img.shields.io/badge/License-Broadcom-green.svg)](LICENSE.md)
 [![Version](https://img.shields.io/badge/Version-1.0.0.0-orange.svg)](CHANGELOG.md)
 ![Downloads](https://img.shields.io/github/downloads/vmware/powershell-vks-utilities/total?label=Release%20Downloads)
-
-# Powershell Scripts for VMware vSphere Kubernetes Service (VKS)
 
 ## First Utility - Manage VM Classes
 
@@ -27,9 +25,14 @@ Easily export your common VM configurations into VM class definitions.  VM class
 
 <img src="Manage-VMClasses/images/DiscoverVMs.png" alt="App Screenshot" width="1000">
 
-
 ## Screen Short showing TUI for Import
 
 <img src="Manage-VMClasses/images/ImportVMs.png" alt="App Screenshot" width="1000">
 
+## Example Usage
 
+[Examples](Manage-VMClasses/EXAMPLES.md)
+
+## Detailed VM Manage Readme
+
+[Detailed Readme](Manage-VMClasses/README.md)
