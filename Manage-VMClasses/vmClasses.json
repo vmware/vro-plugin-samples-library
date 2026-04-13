@@ -1,0 +1,86 @@
+[
+  {
+    "name": "32cpu-besteffort-262144mb-besteffort",
+    "cpuCount": "32",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "262144",
+    "memoryCommitment": "bestEffort"
+  },
+  {
+    "name": "2cpu-besteffort-8192mb-besteffort",
+    "cpuCount": "2",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "8192",
+    "memoryCommitment": "bestEffort"
+  },
+  {
+    "name": "8cpu-besteffort-98304mb-besteffort",
+    "cpuCount": "8",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "98304",
+    "memoryCommitment": "bestEffort"
+  },
+  {
+    "name": "2cpu-besteffort-3072mb-besteffort",
+    "cpuCount": "2",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "3072",
+    "memoryCommitment": "bestEffort"
+  },
+  {
+    "name": "4cpu-besteffort-16384mb-besteffort",
+    "cpuCount": "4",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "16384",
+    "memoryCommitment": "bestEffort"
+  },
+  {
+    "name": "8cpu-besteffort-32768mb-besteffort",
+    "cpuCount": "8",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "32768",
+    "memoryCommitment": "bestEffort"
+  },
+  {
+    "name": "16cpu-besteffort-131072mb-besteffort",
+    "cpuCount": "16",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "131072",
+    "memoryCommitment": "bestEffort"
+  },
+  {
+    "name": "6cpu-guaranteed-24576mb-guaranteed",
+    "cpuCount": "6",
+    "cpuCommitment": "guaranteed",
+    "memoryMB": "24576",
+    "memoryCommitment": "guaranteed"
+  },
+  {
+    "name": "1cpu-besteffort-2048mb-besteffort",
+    "cpuCount": "1",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "2048",
+    "memoryCommitment": "bestEffort"
+  },
+  {
+    "name": "4cpu-besteffort-4096mb-besteffort",
+    "cpuCount": "4",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "4096",
+    "memoryCommitment": "bestEffort"
+  },
+  {
+    "name": "4cpu-besteffort-12288mb-besteffort",
+    "cpuCount": "4",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "12288",
+    "memoryCommitment": "bestEffort"
+  },
+  {
+    "name": "4cpu-besteffort-21504mb-besteffort",
+    "cpuCount": "4",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "21504",
+    "memoryCommitment": "bestEffort"
+  }
+]

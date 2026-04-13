@@ -1,11 +1,11 @@
 # VM Class Management
 
-Tools for discovering VM configurations from a live vCenter and managing
+Tools for discovering VM configurations from a vCenter and managing
 vCenter Supervisor VM class definitions.
 
 ## Prerequisites
 
-- PowerShell 7.4 or later [download](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell).f
+- PowerShell 7.4 or later [download](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell).
 - VCF PowerCLI 9.0+ [download](https://developer.broadcom.com/powercli/installation-guide).
 - Network access to vCenter.
 - A user with the following rights, at minimum, to the source vCenter: Read-only (at vCenter root level).
