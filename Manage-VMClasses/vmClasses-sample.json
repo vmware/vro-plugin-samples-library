@@ -1,0 +1,23 @@
+[
+  {
+    "name": "1cpu-guaranteed-512mb-guaranteed",
+    "cpuCount": "1",
+    "cpuCommitment": "guaranteed",
+    "memoryMB": "512",
+    "memoryCommitment": "guaranteed"
+  },
+  {
+    "name": "1cpu-besteffort-512mb-besteffort",
+    "cpuCount": "1",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "512",
+    "memoryCommitment": "bestEffort"
+  },
+  {
+    "name": "4cpu-besteffort-8192mb-guaranteed",
+    "cpuCount": "4",
+    "cpuCommitment": "bestEffort",
+    "memoryMB": "8192",
+    "memoryCommitment": "guaranteed"
+  }
+]
