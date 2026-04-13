@@ -5,21 +5,25 @@ on:
     - cron: '0 */4 * * *' # Runs every four hours
   workflow_dispatch:      # Allows you to run it manually
 
+# 'permissions' should be at the top level or inside a specific job
+permissions:
+  contents: read
+
 jobs:
-  permissions:
-    contents: read
-    pull-requests: write
   count-downloads:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch and Count Downloads
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # We use jq to navigate the JSON structure directly
-          TOTAL_DOWNLOADS=$(curl -s https://api.github.com/repos/vmware/powershell-vks-utilities/releases \
-            | jq '[.[] | .assets[].download_count] | add')
+          # Use the GITHUB_TOKEN to avoid API rate limits
+          TOTAL_DOWNLOADS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            https://api.github.com/repos/vmware/powershell-vks-utilities/releases \
+            | jq '[.[] | .assets[].download_count] | add // 0')
           
           echo "Total Release Downloads: $TOTAL_DOWNLOADS"
           
-          # Optional: Save to a summary for the Action run
+          # Save to a summary for the Action run
           echo "### Release Statistics 📊" >> $GITHUB_STEP_SUMMARY
           echo "- **Total Downloads:** $TOTAL_DOWNLOADS" >> $GITHUB_STEP_SUMMARY
