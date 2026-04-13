@@ -1,0 +1,542 @@
+{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \qc \f0 \sa180 \li0 \fi0 \b \fs36 Manage-VMClasses\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 VM Class Management\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Tools for discovering VM configurations from a vCenter and managing vCenter Supervisor VM class definitions.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Prerequisites\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab PowerShell 7.4 or later {\field{\*\fldinst{HYPERLINK "https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell"}}{\fldrslt{\ul
+download
+}}}
+.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab VCF PowerCLI 9.0+ {\field{\*\fldinst{HYPERLINK "https://developer.broadcom.com/powercli/installation-guide"}}{\fldrslt{\ul
+download
+}}}
+.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Network access to vCenter.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab A user with the following rights, at minimum, to the source vCenter: Read-only (at vCenter root level).\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab A user with the following rights, at minimum, to the destination vCenter: Namespaces.Configure and Namespaces.ListAccess.\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Script: {\f1 Manage-VMClasses.ps1}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 A single script that covers the full lifecycle of Supervisor VM classes \u8212- discover, list, backup, update, and delete.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Authentication\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The script always prompts for credentials interactively unless you set the {\f1 VCENTER_PASSWORD} environment variable before running it. Use this for CI/CD or non-interactive pipelines. This option is not compatible with interactive mode.\par}
+{\pard \ql \f0 \sa180 \li720 \fi0 {\b Note:} if the password is incorrect, you will be prompted to enter your username and password interactively.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel3 \b \fs24 Example\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 > $env:VCENTER_PASSWORD = "<elided>"\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel3 \b \fs24 Interactive (default)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 .\\Manage-VMClasses.ps1\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel3 \b \fs24 Non-interactive\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 .\\Manage-VMClasses.ps1 -VcenterServer vcenter.example.com -VcenterUser admininstrator@vsphere.local -Action [Discover|List|Backup|Update|Delete]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Actions\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel3 \b \fs24 {\f1 Discover} \u8212- Scan live VMs and generate a class definition file\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Connects to vCenter, enumerates all VMs, and groups them by unique CPU / memory / GPU configuration. An interactive table lets you select which groups to include (including all). The selected configurations are written to the file {\f1 vmClasses.json} by default, or to the path you specify with {\f1 -JsonPath}.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 If the output file already exists, the script prompts you to overwrite it, enter a different path, or cancel. Pass {\f1 -Force} parameter to overwrite without prompting, and {\f1 -SaveAll} to skip the selection table and save every discovered configuration automatically. Combine both for a fully non-interactive run.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # Interactive discovery; writes vmClasses.json\line
+.\\Manage-VMClasses.ps1 -Action Discover -VcenterServer vcenter.example.com -VcenterUser admininstrator@vsphere.local\line
+\line
+# Write to a custom path\line
+.\\Manage-VMClasses.ps1 -Action Discover -VcenterServer vcenter.example.com -VcenterUser admininstrator@vsphere.local `\line
+    -JsonPath .\\my-classes.json\line
+\line
+# Overwrite an existing file without prompting\line
+.\\Manage-VMClasses.ps1 -Action Discover -VcenterServer vcenter.example.com -VcenterUser admininstrator@vsphere.local `\line
+    -Force\line
+\line
+# Fully non-interactive: save all configurations, overwrite existing file\line
+.\\Manage-VMClasses.ps1 -Action Discover -VcenterServer vcenter.example.com -VcenterUser admininstrator@vsphere.local `\line
+    -SaveAll -Force\line
+\line
+# Example:\line
+\line
+.\\Manage-VMClasses.ps1 -Action Discover -VcenterServer vcenter.example.com -VcenterUser administrator@vsphere.local -Force -SaveAll\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "vcenter.example.com"...\line
+[INFO] Querying all VMs from vCenter "vcenter.example.com"...\line
+[INFO] Found 121 VM(s). Grouping by configuration...\line
+[INFO] Found 12 unique VM configuration(s).\line
+\line
+Class name format: \{N\}cpu-\{cpu-commitment\}-\{M\}mb-\{mem-commitment\}[-\{gpu-profile\}]\line
+  "guaranteed" = VMs in this group have a non-zero reservation; "besteffort" = no reservation.\line
+\line
+Class Name                           CPUs Memory (MB) CPU Reserved Mem Reserved VM Count\line
+----------                           ---- ----------- ------------ ------------ --------\line
+32cpu-besteffort-262144mb-besteffort   32 262,144     No           No                 51\line
+2cpu-besteffort-8192mb-besteffort       2 8,192       No           No                 20\line
+2cpu-besteffort-3072mb-besteffort       2 3,072       No           No                 13\line
+4cpu-besteffort-16384mb-besteffort      4 16,384      No           No                 11\line
+8cpu-besteffort-98304mb-besteffort      8 98,304      No           No                 10\line
+8cpu-besteffort-32768mb-besteffort      8 32,768      No           No                  4\line
+16cpu-besteffort-131072mb-besteffort   16 131,072     No           No                  4\line
+6cpu-guaranteed-24576mb-guaranteed      6 24,576      Yes          Yes                 3\line
+1cpu-besteffort-2048mb-besteffort       1 2,048       No           No                  2\line
+4cpu-besteffort-4096mb-besteffort       4 4,096       No           No                  1\line
+4cpu-besteffort-12288mb-besteffort      4 12,288      No           No                  1\line
+4cpu-besteffort-21504mb-besteffort      4 21,504      No           No                  1\line
+\line
+[INFO] Saving all 12 configuration(s) to "/Users/testuser/vmClasses.json" (-SaveAll).\line
+[INFO] Wrote 12 VM class definition(s) to "/Users/testuser/vmClasses.json".\line
+[INFO] Discover completed.\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel3 \b \fs24 {\f1 List} \u8212- Print all VM classes on vCenter\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Prints a table of all VM classes (Name, CpuCount, MemoryMB, Default, Gpu). The {\b Default} column shows {\b Yes} for the 16 pre-defined vCenter class names and {\b No} for any custom classes. No JSON file is required.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # List all VM classes\line
+.\\Manage-VMClasses.ps1 -Action List -VcenterServer vcenter.example.com -VcenterUser admininstrator@vsphere.local\line
+\line
+# Example\line
+ .\\Manage-VMClasses.ps1 -Action List -VcenterServer vdest-vcenter.example.com -VcenterUser administrator@vsphere.local\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "vcenter.example.com"...\line
+[INFO] Listing VM classes on vCenter "vcenter.example.com"...\line
+\line
+Name                 CpuCount MemoryMB Default Gpu\line
+----                 -------- -------- ------- ---\line
+best-effort-2xlarge         8    65536 Yes     No\line
+best-effort-4xlarge        16   131072 Yes     No\line
+best-effort-8xlarge        32   131072 Yes     No\line
+best-effort-large           4    16384 Yes     No\line
+best-effort-medium          2     8192 Yes     No\line
+best-effort-small           2     4096 Yes     No\line
+best-effort-xlarge          4    32768 Yes     No\line
+best-effort-xsmall          2     2048 Yes     No\line
+custom-1cpu-2gb-2gpu        4     2048 No      profile1, profile2\line
+custom-2cpu-4gb             2     4096 No      No\line
+guaranteed-2xlarge          8    65536 Yes     No\line
+guaranteed-4xlarge         16   131072 Yes     No\line
+guaranteed-8xlarge         32   131072 Yes     No\line
+guaranteed-large            4    16384 Yes     No\line
+guaranteed-medium           2     8192 Yes     No\line
+guaranteed-small            2     4096 Yes     No\line
+guaranteed-xlarge           4    32768 Yes     No\line
+guaranteed-xsmall           2     2048 Yes     No\line
+\line
+[INFO] Listed 18 VM class(es).\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel3 \b \fs24 {\f1 Backup} \u8212- Save all VM classes from vCenter to a JSON file\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 This operation queries every VM class currently defined on vCenter and writes them to a JSON file in the same format as {\f1 vmClasses.json}. The backup file can be used directly with {\f1 -Action Update} to restore or re-apply classes to any vCenter.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The default output filename embeds the vCenter name so that backups from multiple environments are easy to distinguish at a glance:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 vmClasses-backup-vcenter.example.com.json\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Pass {\f1 -JsonPath} to override the output path. Pass {\f1 -Force} to overwrite an existing file without prompting.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # Backup to the default file\line
+.\\Manage-VMClasses.ps1 -Action Backup -VcenterServer vcenter.example.com -VcenterUser administrator@vsphere.local\line
+\line
+# Backup to a dated file and overwrite without prompting\line
+.\\Manage-VMClasses.ps1 -Action Backup -VcenterServer vcenter.example.com -VcenterUser administrator@vsphere.local `\line
+    -JsonPath .\\backup-$(Get-Date -Format yyyyMMdd).json -Force\line
+\line
+# Example\line
+.\\Manage-VMClasses.ps1 -Action Backup -VcenterServer source-vcenter.example.com -VcenterUser administrator@vsphere.local\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "source-vcenter.example.com"...\line
+[INFO] Retrieving all VM class definitions from vCenter "source-vcenter.example.com"...\line
+[WARNING] VM class "custom-pcidevice-class" has DynamicDirectPathIO device(s); those settings are not supported in this format and will be omitted.\line
+[INFO] Retrieved 18 VM class definition(s).\line
+[WARNING] 1 class(es) had DynamicDirectPathIO configuration that could not be included in the backup.\line
+[INFO] Wrote 18 VM class definition(s) to "/Users/testuser/vmClasses-backup-source-vcenter.example.com.json".\line
+[INFO] Backup completed.\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel3 \b \fs24 {\f1 Update} \u8212- Apply VM class definitions to vCenter\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Reads the JSON file and applies each entry to vCenter\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Applies the following operations as needed:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Create} \u8212- class does not yet exist on vCenter\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Patch} \u8212- class exists but differs from the file\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Skip} \u8212- class already matches the file\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 If a class name matches one of the 16 built-in default names, the script logs a {\f1 [WARNING]} and \u8212- in interactive sessions \u8212- asks for confirmation before proceeding.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Use {\f1 -VmClassName all} to process every entry, or pass a specific class name to target one.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # Apply all classes from vmClasses.json\line
+.\\Manage-VMClasses.ps1 -Action Update -VcenterServer vcenter.example.com -VcenterUser admininstrator@vsphere.local -VmClassName all\line
+\line
+# Apply or update a single named class\line
+.\\Manage-VMClasses.ps1 -Action Update -VcenterServer vcenter.example.com -VcenterUser admininstrator@vsphere.local `\line
+    -VmClassName my-gpu-class\line
+\line
+# Dry-run (no changes are made)\line
+.\\Manage-VMClasses.ps1 -Action Update -WhatIf -VcenterServer vcenter.example.com -VcenterUser admininstrator@vsphere.local -VmClassName all\line
+\line
+\line
+# Example\line
+.\\Manage-VMClasses.ps1 -Action Update -VcenterServer vcenter.example.com -VcenterUser administrator@vsphere.local -VmClassName all\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "vcenter.example.com"...\line
+[INFO] Creating VM class "32cpu-besteffort-262144mb-besteffort"... Succeeded\line
+[INFO] Creating VM class "2cpu-besteffort-8192mb-besteffort"... Succeeded\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel3 \b \fs24 {\f1 Delete} \u8212- Remove a VM class from vCenter\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Delete no longer reads from the JSON file. Instead it queries vCenter directly and operates only on {\b custom} classes (the 16 built-in defaults are always excluded and not shown).\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b {\f1 -VmClassName all}} \u8212- deletes every custom class found on vCenter, logging how many built-in defaults were skipped.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b {\f1 -VmClassName <name>}} \u8212- deletes the named class directly (no JSON lookup).\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # Interactive: choose from custom classes on vCenter\line
+.\\Manage-VMClasses.ps1 -Action Delete -VcenterServer vcenter.example.com -VcenterUser admininstrator@vsphere.local\line
+\line
+# Delete all custom classes (built-in defaults are preserved)\line
+.\\Manage-VMClasses.ps1 -Action Delete -VcenterServer vcenter.example.com -VcenterUser admininstrator@vsphere.local `\line
+    -VmClassName all\line
+\line
+# Delete one specific class by name\line
+.\\Manage-VMClasses.ps1 -Action Delete -VcenterServer vcenter.example.com -VcenterUser admininstrator@vsphere.local `\line
+    -VmClassName my-gpu-class\line
+\line
+# Example\line
+.\\Manage-VMClasses.ps1 -Action Delete -VcenterServer vdest-vcenter.example.com -VcenterUser administrator@vsphere.local -VmClassName 32cpu-besteffort-262144mb-besteffort\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+[INFO] Deleting VM class "32cpu-besteffort-262144mb-besteffort"... Succeeded\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Getting help\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 .\\Manage-VMClasses.ps1 -Examples   # show usage examples\line
+.\\Manage-VMClasses.ps1 -Detailed   # show parameters with descriptions\line
+.\\Manage-VMClasses.ps1 -Full       # show full comment-based help\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Parameters\par}
+{
+\trowd \trgaph120
+\clbrdrb\brdrs\cellx2160\clbrdrb\brdrs\cellx4320\clbrdrb\brdrs\cellx6480\clbrdrb\brdrs\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Parameter\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Required\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Default\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Description\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2160\cellx4320\cellx6480\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 -Action}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 No\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\i (prompts)}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Action to perform: {\f1 Backup}, {\f1 Discover}, {\f1 Update}, {\f1 List}, or {\f1 Delete}.\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2160\cellx4320\cellx6480\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 -Force}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 No\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 \u8212-\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 For {\f1 Discover} and {\f1 Backup}: overwrite an existing output file without prompting.\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2160\cellx4320\cellx6480\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 -JsonPath}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 No\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 vmClasses.json} (next to script)\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Path to the JSON class definition file. For {\f1 Discover}, specifies the output path (default: {\f1 vmClasses.json}). For {\f1 Backup}, specifies the output path (default: {\f1 vmClasses-backup-<vCenter>.json}).\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2160\cellx4320\cellx6480\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 -LogLevel}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 No\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 INFO}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Console log verbosity: {\f1 DEBUG}, {\f1 INFO}, {\f1 ADVISORY}, {\f1 WARNING}, {\f1 ERROR}. All levels are always written to the log file.\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2160\cellx4320\cellx6480\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 -SaveAll}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 No\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 \u8212-\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 For {\f1 Discover}: skip the interactive configuration selection and save every discovered VM configuration automatically. Combine with {\f1 -Force} for fully non-interactive runs.\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2160\cellx4320\cellx6480\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 -VcenterServer}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 No*\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 \u8212-\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 vCenter FQDN or IP address. Prompts interactively when omitted.\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2160\cellx4320\cellx6480\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 -VcenterUser}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 No*\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 \u8212-\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 vCenter sign-in name, e.g. {\f1 administrator@vsphere.local}. Prompts interactively when omitted.\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2160\cellx4320\cellx6480\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 -VmClassName}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 No*\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 \u8212-\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 VM class name to target, or {\f1 all}. Required for non-interactive {\f1 Update} and {\f1 Delete}; prompts when omitted in an interactive session.\par}
+\cell}
+}
+\intbl\row}
+{\pard \ql \f0 \sa180 \li0 \fi0 \par}
+{\pard \ql \f0 \sa180 \li0 \fi0 * Prompted interactively when omitted in an interactive session.\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 JSON File Format\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\f1 vmClasses.json} is a JSON array. Each object represents one VM class.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 [\line
+  \{\line
+    "name": "best-effort-2xlarge",\line
+    "cpuCount": 8,\line
+    "cpuCommitment": "bestEffort",\line
+    "memoryMB": 16384,\line
+    "memoryCommitment": "bestEffort"\line
+  \},\line
+  \{\line
+    "name": "guaranteed-gpu-class",\line
+    "description": "Reserved class with A100 GPU",\line
+    "cpuCount": 16,\line
+    "cpuCommitment": "guaranteed",\line
+    "memoryMB": 65536,\line
+    "memoryCommitment": "guaranteed",\line
+    "vgpuDevices": [\line
+      \{\line
+        "profileNames": ["nvidia-a100-40c"]\line
+      \}\line
+    ]\line
+  \}\line
+]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel3 \b \fs24 Required fields\par}
+{
+\trowd \trgaph120
+\clbrdrb\brdrs\cellx2880\clbrdrb\brdrs\cellx5760\clbrdrb\brdrs\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Field\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Type\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Description\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 name}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 string\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Lowercase DNS-label format ({\f1 a-z0-9} and {\f1 -}, 1\u8211-63 chars).\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 cpuCount}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 integer\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Number of vCPUs (1\u8211-960).\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 cpuCommitment}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 string\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 bestEffort} or {\f1 guaranteed}.\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 memoryMB}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 integer\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Memory in MiB (\u8804 ? 25165824).\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 memoryCommitment}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 string\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 bestEffort} or {\f1 guaranteed}.\par}
+\cell}
+}
+\intbl\row}
+{\pard \ql \f0 \sa180 \li0 \fi0 \par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel3 \b \fs24 Optional fields\par}
+{
+\trowd \trgaph120
+\clbrdrb\brdrs\cellx2880\clbrdrb\brdrs\cellx5760\clbrdrb\brdrs\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Field\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Type\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Description\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 description}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 string\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Human-readable label shown in the vCenter UI. Omit when not needed.\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\f1 vgpuDevices}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 array\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 One or more vGPU device objects (see below). Required when {\f1 cpuCommitment} or {\f1 memoryCommitment} is {\f1 guaranteed} and a GPU is needed.\par}
+\cell}
+}
+\intbl\row}
+{\pard \ql \f0 \sa180 \li0 \fi0 \par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel3 \b \fs24 vGPU device object\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 \{\line
+  "profileNames": ["nvidia-a100-40c"]\line
+\}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Each object may contain 1\u8211-4 profile names. Multiple vGPU device objects represent distinct GPU-profile combinations.\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Interactive guided workflow (no {\f1 -Action})\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Running the script without {\f1 -Action} displays an arrow-key menu in the order {\b Discover \u8594 ? List \u8594 ? Backup \u8594 ? Update \u8594 ? Delete \u8594 ? Help \u8594 ? Quit}. Selecting an action chains automatically into the next logical steps:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Discover} \u8212- connects to a source vCenter, scans VMs, writes the JSON. Offers to exit for manual class-name editing, or continues to an import flow (pre-backup \u8594 ? Update \u8594 ? post-backup) against the same or a different destination vCenter.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b List} \u8212- connects to destination vCenter, lists classes, then optionally takes a pre-import backup, runs an import, and takes a post-import backup.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Backup} \u8212- connects to destination vCenter, takes a timestamped backup.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Update} \u8212- connects to source vCenter, imports classes, then optionally removes a class and lists the final state.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Delete} \u8212- connects to destination vCenter, takes a pre-delete backup, removes selected classes, lists remaining classes, takes a post-delete backup.\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 All workflow backup files are saved in a {\f1 Backup/} subdirectory next to the script, with filenames that embed the vCenter name, qualifier ({\f1 pre}/{\f1 post}), and timestamp for easy identification.\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Example of interactive workflow (Discovery to Insert)\par}
+{\pard \ql \f0 \sa180 \li720 \fi0 .Manage-VMClasses.ps1\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Select an action below Arrow keys=navigate Enter=confirm Esc=quit\par}
+{\pard \ql \f0 \sa180 \li720 \fi0 Discover Scan live VMs and generate vmClasses.json List Show all VM classes on vCenter Backup Save all VM classes from vCenter to a JSON file Update Apply vmClasses.json to vCenter Delete Remove VM classes from vCenter Help Show usage documentation for this script Quit Exit without making any changes\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [INFO] Please connect to your source vCenter to continue.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Enter your vCenter Server FQDN or IP address (or press 'c' to cancel): vcenter-1.example.com\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Enter your vCenter username: {\field{\*\fldinst{HYPERLINK "mailto:administrator@vsphere.local"}}{\fldrslt{\ul
+administrator@vsphere.local
+}}}
+\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Enter your vCenter password: **************** [INFO] Connecting to source vCenter "vcenter-1.example.com"... [INFO] Querying all VMs from vCenter "vcenter-1.example.com"... [INFO] Found 135 VM(s). Grouping by configuration... [INFO] Found 13 unique VM configuration(s).\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Class name format: \{N\}cpu-\{cpu-commitment\}-\{M\}mb-\{mem-commitment\}[-\{gpu-profile\}] "guaranteed" = VMs in this group have a non-zero reservation; "besteffort" = no reservation.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1   Class Name                            CPUs Memory (MB)  CPU Reserved Mem Reserved  VM Count\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Space=toggle Arrow keys=navigate A=select all / none Enter=confirm\par}
+{\pard \ql \f0 \sa180 \li720 \fi0 [x] Select All [x] 32cpu-besteffort-262144mb-besteffort 32 262,144 No No 55 [x] 2cpu-besteffort-8192mb-besteffort 2 8,192 No No 21 [x] 8cpu-besteffort-98304mb-besteffort 8 98,304 No No 15 [x] 2cpu-besteffort-3072mb-besteffort 2 3,072 No No 14 [x] 4cpu-besteffort-16384mb-besteffort 4 16,384 No No 12 [x] 8cpu-besteffort-32768mb-besteffort 8 32,768 No No 5 [x] 16cpu-besteffort-131072mb-besteffort 16 131,072 No No 4 [x] 6cpu-guaranteed-24576mb-guaranteed 6 24,576 Yes Yes 3 [x] 1cpu-besteffort-2048mb-besteffort 1 2,048 No No 2 [x] 4cpu-besteffort-4096mb-besteffort 4 4,096 No No 1 [x] 4cpu-besteffort-12288mb-besteffort 4 12,288 No No 1 [x] 4cpu-besteffort-21504mb-besteffort 4 21,504 No No 1 [x] 32cpu-besteffort-131072mb-besteffort 32 131,072 No No 1\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [INFO] Wrote 13 VM class definition(s) to "c:\\Users\\testuser/vmClasses.json". View the output JSON? [Y/N]: N [INFO] Discover completed.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Exit to manually modify "vmClasses.json" to rename VM classes before proceeding to the VM class import steps? [Y/N]: N\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Import VM classes into the same vCenter "vcenter-1.example.com"? [Y/N]: N\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [INFO] Please connect to your destination vCenter to continue.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Enter your vCenter Server FQDN or IP address (or press 'c' to cancel): vcenter-2.example.com\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Enter your vCenter username: {\field{\*\fldinst{HYPERLINK "mailto:administrator@vsphere.local"}}{\fldrslt{\ul
+administrator@vsphere.local
+}}}
+\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Enter your vCenter password: **************** [INFO] Connecting to destination vCenter "vcenter-2.example.com"... [INFO] Proceeding to list VM classes on "vcenter-2.example.com". [INFO] Listing VM classes on vCenter "vcenter-2.example.com"...\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Name CpuCount MemoryMB Default Gpu\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 best-effort-2xlarge 8 65536 Yes No best-effort-4xlarge 16 131072 Yes No best-effort-8xlarge 32 131072 Yes No best-effort-large 4 16384 Yes No best-effort-medium 2 8192 Yes No best-effort-small 2 4096 Yes No best-effort-xlarge 4 32768 Yes No best-effort-xsmall 2 2048 Yes No guaranteed-2xlarge 8 65536 Yes No guaranteed-4xlarge 16 131072 Yes No guaranteed-8xlarge 32 131072 Yes No guaranteed-large 4 16384 Yes No guaranteed-medium 2 8192 Yes No guaranteed-small 2 4096 Yes No guaranteed-xlarge 4 32768 Yes No guaranteed-xsmall 2 2048 Yes No\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [INFO] Listed 16 VM class(es).\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Press any key to proceed to the next step - Backup (pre-import) - Save all VM classes from vCenter to a JSON file...\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [INFO] Retrieving all VM class definitions from vCenter "vcenter-2.example.com"... [INFO] Retrieved 16 VM class definition(s). [INFO] Wrote 16 VM class definition(s) to "c:\\Users\\testuser\\Backup\\vmClasses-backup-vcenter-2.example.com-pre-20260402-085744.json". [INFO] Backup completed.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Press any key to proceed to the next step - Update - Apply vmClasses.json to vCenter...\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [INFO] The default VM class file is "c:\\Users\\testuser\\vmClasses.json".\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Use a different VM class file instead of "vmClasses.json"? [Y/N]: N\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [INFO] Select VM class(es) to update: [INFO] Source file: "c:\\Users\\testuser/vmClasses.json"\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Class Name\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Space=toggle Arrow keys=navigate A=select all / none Enter=confirm Esc=cancel\par}
+{\pard \ql \f0 \sa180 \li720 \fi0 [x] Select All [x] 32cpu-besteffort-262144mb-besteffort [x] 2cpu-besteffort-8192mb-besteffort [x] 8cpu-besteffort-98304mb-besteffort [x] 2cpu-besteffort-3072mb-besteffort [x] 4cpu-besteffort-16384mb-besteffort [x] 8cpu-besteffort-32768mb-besteffort [x] 16cpu-besteffort-131072mb-besteffort [x] 6cpu-guaranteed-24576mb-guaranteed [x] 1cpu-besteffort-2048mb-besteffort [x] 4cpu-besteffort-4096mb-besteffort [x] 4cpu-besteffort-12288mb-besteffort [x] 4cpu-besteffort-21504mb-besteffort [x] 32cpu-besteffort-131072mb-besteffort\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [INFO] Creating VM class "32cpu-besteffort-262144mb-besteffort"... Succeeded [INFO] Creating VM class "2cpu-besteffort-8192mb-besteffort"... Succeeded [INFO] Creating VM class "8cpu-besteffort-98304mb-besteffort"... Succeeded [INFO] Creating VM class "2cpu-besteffort-3072mb-besteffort"... Succeeded [INFO] Creating VM class "4cpu-besteffort-16384mb-besteffort"... Succeeded [INFO] Creating VM class "8cpu-besteffort-32768mb-besteffort"... Succeeded [INFO] Creating VM class "16cpu-besteffort-131072mb-besteffort"... Succeeded [INFO] Creating VM class "6cpu-guaranteed-24576mb-guaranteed"... Succeeded [INFO] Creating VM class "1cpu-besteffort-2048mb-besteffort"... Succeeded [INFO] Creating VM class "4cpu-besteffort-4096mb-besteffort"... Succeeded [INFO] Creating VM class "4cpu-besteffort-12288mb-besteffort"... Succeeded [INFO] Creating VM class "4cpu-besteffort-21504mb-besteffort"... Succeeded [INFO] Creating VM class "32cpu-besteffort-131072mb-besteffort"... Succeeded\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Press any key to proceed to the next step - Backup (post-import) - Save all VM classes from vCenter to a JSON file...\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [INFO] Retrieving all VM class definitions from vCenter "vcenter-2.example.com"... [INFO] Retrieved 29 VM class definition(s). [INFO] Wrote 29 VM class definition(s) to "c:\\Users\\testuser/Backup/vmClasses-backup-vcenter-2.example.com-post-20260402-085811.json". [INFO] Backup completed\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Logs\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Log files are written to {\f1 logs/Manage-VMClasses-<date>.log} next to the script. All log levels are always captured regardless of the {\f1 -LogLevel} setting.\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Notes\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab SSL certificate validation follows your PowerCLI {\f1 InvalidCertificateAction} setting.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab The {\f1 description} field is fully optional. Omitting it from a JSON entry does not trigger a diff warning during {\f1 Update} if the class on vCenter also has no description.\sa180\par}
+}

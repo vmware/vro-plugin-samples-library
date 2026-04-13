@@ -1,0 +1,472 @@
+{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \qc \f0 \sa180 \li0 \fi0 \b \fs36 Manage-VMClasses Examples\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 Examples\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Run script with no arguments (shows menu)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 > ./Manage-VMClasses.ps1\line
+\line
+[INFO] Before connecting to your vCenter choose an action to perform.\line
+\line
+  Select an action below\line
+  Arrow keys=navigate  Enter=confirm  Esc=quit\line
+\line
+  > Discover   Scan live VMs and generate vmClasses.json\line
+    List       Show all VM classes on vCenter\line
+    Backup     Save all VM classes from vCenter to a JSON file\line
+    Update     Apply vmClasses.json to vCenter\line
+    Delete     Remove VM classes from vCenter\line
+    Help       Show usage documentation for this script\line
+    Quit       Exit without making any changes\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Discovery (from menu)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 > ./Manage-VMClasses.ps1\line
+\line
+[INFO] Before connecting to your vCenter choose an action to perform.\line
+\line
+  Select an action below\line
+  Arrow keys=navigate  Enter=confirm  Esc=quit\line
+\line
+  > Discover   Scan live VMs and generate vmClasses.json\line
+    List       Show all VM classes on vCenter\line
+    Backup     Save all VM classes from vCenter to a JSON file\line
+    Update     Apply vmClasses.json to vCenter\line
+    Delete     Remove VM classes from vCenter\line
+    Help       Show usage documentation for this script\line
+    Quit       Exit without making any changes\line
+\line
+\line
+Enter your vCenter Server FQDN or IP address (or press 'c' to cancel): source-vcenter.example.com"\line
+\line
+Enter your vCenter username: administrator@vsphere.local\line
+\line
+Enter your vCenter password: ****************\line
+\line
+[INFO] Connecting to vCenter "source-vcenter.example.com"...\line
+[INFO] Querying all VMs from vCenter "source-vcenter.example.com"...\line
+[INFO] Found 121 VM(s). Grouping by configuration...\line
+[INFO] Found 12 unique VM configuration(s).\line
+\line
+Class name format: \{N\}cpu-\{cpu-commitment\}-\{M\}mb-\{mem-commitment\}[-\{gpu-profile\}]\line
+  "guaranteed" = VMs in this group have a non-zero reservation; "besteffort" = no reservation.\line
+\line
+      Class Name                            CPUs Memory (MB)  CPU Reserved Mem Reserved  VM Count\line
+  -----------------------------------------------------------------------------------------------\line
+  Space=toggle  Arrow keys=navigate  A=select all / none  Enter=confirm  Esc=cancel\line
+\line
+  [ ] Select All\line
+  [x] 32cpu-besteffort-262144mb-besteffort    32     262,144  No           No                  51\line
+> [x] 2cpu-besteffort-8192mb-besteffort        2       8,192  No           No                  20\line
+  [ ] 2cpu-besteffort-3072mb-besteffort        2       3,072  No           No                  13\line
+  [ ] 4cpu-besteffort-16384mb-besteffort       4      16,384  No           No                  11\line
+  [ ] 8cpu-besteffort-98304mb-besteffort       8      98,304  No           No                  10\line
+  [ ] 8cpu-besteffort-32768mb-besteffort       8      32,768  No           No                   4\line
+  [ ] 16cpu-besteffort-131072mb-besteffort    16     131,072  No           No                   4\line
+  [ ] 6cpu-guaranteed-24576mb-guaranteed       6      24,576  Yes          Yes                  3\line
+  [ ] 1cpu-besteffort-2048mb-besteffort        1       2,048  No           No                   2\line
+  [ ] 4cpu-besteffort-4096mb-besteffort        4       4,096  No           No                   1\line
+  [ ] 4cpu-besteffort-12288mb-besteffort       4      12,288  No           No                   1\line
+  [ ] 4cpu-besteffort-21504mb-besteffort       4      21,504  No           No                   1\line
+\line
+[INFO] Wrote 2 VM class definition(s) to "/Users/testuser/vmClasses.json".\line
+View the output JSON? [Y/N]: y\line
+\line
+[\line
+  \{\line
+    "name": "32cpu-besteffort-262144mb-besteffort",\line
+    "cpuCount": "32",\line
+    "cpuCommitment": "bestEffort",\line
+    "memoryMB": "262144",\line
+    "memoryCommitment": "bestEffort"\line
+  \},\line
+  \{\line
+    "name": "2cpu-besteffort-8192mb-besteffort",\line
+    "cpuCount": "2",\line
+    "cpuCommitment": "bestEffort",\line
+    "memoryMB": "8192",\line
+    "memoryCommitment": "bestEffort"\line
+  \}\line
+]\line
+\line
+[INFO] Discover completed.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Update (from menu)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 > ./Manage-VMClasses.ps1\line
+\line
+[INFO] Before connecting to your vCenter choose an action to perform.\line
+\line
+  Select an action below\line
+  Arrow keys=navigate  Enter=confirm  Esc=quit\line
+\line
+    Discover   Scan live VMs and generate vmClasses.json\line
+    List       Show all VM classes on vCenter\line
+    Backup     Save all VM classes from vCenter to a JSON file\line
+  > Update     Apply vmClasses.json to vCenter\line
+    Delete     Remove VM classes from vCenter\line
+    Help       Show usage documentation for this script\line
+    Quit       Exit without making any changes\line
+\line
+\line
+Enter your vCenter Server FQDN or IP address (or press 'c' to cancel): vdest-vcenter.example.com\line
+\line
+Enter your vCenter username: administrator@vsphere.local\line
+\line
+Enter your vCenter password: ****************\line
+\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+\line
+[INFO] Select VM class(es) to update:\line
+\line
+      Class Name\line
+  ----------------------------------------\line
+  Space=toggle  Arrow keys=navigate  A=select all / none  Enter=confirm  Esc=cancel\line
+\line
+> [x] Select All\line
+  [x] 32cpu-besteffort-262144mb-besteffort\line
+  [x] 2cpu-besteffort-8192mb-besteffort\line
+\line
+[INFO] Creating VM class "32cpu-besteffort-262144mb-besteffort"... Succeeded\line
+[INFO] Creating VM class "2cpu-besteffort-8192mb-besteffort"... Succeeded\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Update (from menu) (notices a difference)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 > ./Manage-VMClasses.ps1\line
+\line
+[INFO] Before connecting to your vCenter choose an action to perform.\line
+\line
+  Select an action below\line
+  Arrow keys=navigate  Enter=confirm  Esc=quit\line
+\line
+    Discover   Scan live VMs and generate vmClasses.json\line
+    List       Show all VM classes on vCenter\line
+    Backup     Save all VM classes from vCenter to a JSON file\line
+  > Update     Apply vmClasses.json to vCenter\line
+    Delete     Remove VM classes from vCenter\line
+    Help       Show usage documentation for this script\line
+    Quit       Exit without making any changes\line
+\line
+\line
+Enter your vCenter Server FQDN or IP address (or press 'c' to cancel): vdest-vcenter.example.com\line
+\line
+Enter your vCenter username: administrator@vsphere.local\line
+\line
+Enter your vCenter password: ****************\line
+\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+\line
+[INFO] Select VM class(es) to update:\line
+\line
+      Class Name\line
+  ----------------------------------------\line
+  Space=toggle  Arrow keys=navigate  A=select all / none  Enter=confirm  Esc=cancel\line
+\line
+> [x] Select All\line
+  [x] 32cpu-besteffort-262144mb-besteffort\line
+  [x] 2cpu-besteffort-8192mb-besteffort\line
+\line
+[INFO] Detected a difference between "vmClasses.json" and vCenter definition of VM class "32cpu-besteffort-262144mb-besteffort".\line
+[INFO]         The cpu_count is 32 in JSON and 35 in vCenter.\line
+[INFO]         The description is not defined in JSON and "great for DBs" in vCenter.\line
+[INFO] Updating VM class "32cpu-besteffort-262144mb-besteffort" on vCenter to match "vmClasses.json"... Succeeded\line
+[INFO] Updating VM class "2cpu-besteffort-8192mb-besteffort" on vCenter to match "vmClasses.json"... Skipped (vCenter already matches the file)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 List (from menu)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 > ./Manage-VMClasses.ps1\line
+\line
+[INFO] Before connecting to your vCenter choose an action to perform.\line
+\line
+  Select an action below\line
+  Arrow keys=navigate  Enter=confirm  Esc=quit\line
+\line
+    Discover   Scan live VMs and generate vmClasses.json\line
+  > List       Show all VM classes on vCenter\line
+    Backup     Save all VM classes from vCenter to a JSON file\line
+    Update     Apply vmClasses.json to vCenter\line
+    Delete     Remove VM classes from vCenter\line
+    Help       Show usage documentation for this script\line
+    Quit       Exit without making any changes\line
+\line
+\line
+Enter your vCenter Server FQDN or IP address (or press 'c' to cancel): vdest-vcenter.example.com\line
+\line
+Enter your vCenter username: administrator@vsphere.local\line
+\line
+Enter your vCenter password: ****************\line
+\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+[INFO] Listing VM classes on vCenter "dest-vcenter.example.com"...\line
+\line
+Name                                 CpuCount MemoryMB Default Gpu\line
+----                                 -------- -------- ------- ---\line
+2cpu-besteffort-8192mb-besteffort           2     8192 No      No\line
+32cpu-besteffort-262144mb-besteffort       32   262144 No      No\line
+best-effort-2xlarge                         8    65536 Yes     No\line
+best-effort-4xlarge                        16   131072 Yes     No\line
+best-effort-8xlarge                        32   131072 Yes     No\line
+best-effort-large                           4    16384 Yes     No\line
+best-effort-medium                          2     8192 Yes     No\line
+best-effort-small                           2     4096 Yes     No\line
+best-effort-xlarge                          4    32768 Yes     No\line
+best-effort-xsmall                          2     2048 Yes     No\line
+custom-1cpu-2gb-2gpu                        4     2048 No      profile1, profile2\line
+custom-2cpu-4gb                             2     4096 No      No\line
+guaranteed-2xlarge                          8    65536 Yes     No\line
+guaranteed-4xlarge                         16   131072 Yes     No\line
+guaranteed-8xlarge                         32   131072 Yes     No\line
+guaranteed-large                            4    16384 Yes     No\line
+guaranteed-medium                           2     8192 Yes     No\line
+guaranteed-small                            2     4096 Yes     No\line
+guaranteed-xlarge                           4    32768 Yes     No\line
+guaranteed-xsmall                           2     2048 Yes     No\line
+\line
+[INFO] Listed 20 VM class(es).\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Parameter-based invocations\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 List all VM classes\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 $env:VCENTER_PASSWORD = "<elided>"\line
+ ./Manage-VMClasses.ps1 -Action List -VcenterServer vdest-vcenter.example.com -VcenterUser administrator@vsphere.local\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+[INFO] Listing VM classes on vCenter "dest-vcenter.example.com"...\line
+\line
+Name                 CpuCount MemoryMB Default Gpu\line
+----                 -------- -------- ------- ---\line
+best-effort-2xlarge         8    65536 Yes     No\line
+best-effort-4xlarge        16   131072 Yes     No\line
+best-effort-8xlarge        32   131072 Yes     No\line
+best-effort-large           4    16384 Yes     No\line
+best-effort-medium          2     8192 Yes     No\line
+best-effort-small           2     4096 Yes     No\line
+best-effort-xlarge          4    32768 Yes     No\line
+best-effort-xsmall          2     2048 Yes     No\line
+custom-1cpu-2gb-2gpu        4     2048 No      profile1, profile2\line
+custom-2cpu-4gb             2     4096 No      No\line
+guaranteed-2xlarge          8    65536 Yes     No\line
+guaranteed-4xlarge         16   131072 Yes     No\line
+guaranteed-8xlarge         32   131072 Yes     No\line
+guaranteed-large            4    16384 Yes     No\line
+guaranteed-medium           2     8192 Yes     No\line
+guaranteed-small            2     4096 Yes     No\line
+guaranteed-xlarge           4    32768 Yes     No\line
+guaranteed-xsmall           2     2048 Yes     No\line
+\line
+[INFO] Listed 18 VM class(es).\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Update all VM classes\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action Update -VcenterServer vdest-vcenter.example.com -VcenterUser administrator@vsphere.local -VmClassName all\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+[INFO] Creating VM class "32cpu-besteffort-262144mb-besteffort"... Succeeded\line
+[INFO] Creating VM class "2cpu-besteffort-8192mb-besteffort"... Succeeded\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Update specific VM class\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action Update -VcenterServer vdest-vcenter.example.com -VcenterUser administrator@vsphere.local -VmClassName 32cpu-besteffort-262144mb-besteffort\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+[INFO] Updating VM class "32cpu-besteffort-262144mb-besteffort" on vCenter to match "vmClasses.json"... Skipped (vCenter already matches the file)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Delete specific VM class\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action Delete -VcenterServer vdest-vcenter.example.com -VcenterUser administrator@vsphere.local -VmClassName 32cpu-besteffort-262144mb-besteffort\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+[INFO] Deleting VM class "32cpu-besteffort-262144mb-besteffort"... Succeeded\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Backup VM classes\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The default filename embeds the vCenter name so backups from different environments are easy to identify. The file content is a plain JSON array compatible with {\f1 -Action Update}.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 > ./Manage-VMClasses.ps1 -Action Backup -VcenterServer source-vcenter.example.com -VcenterUser administrator@vsphere.local\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "source-vcenter.example.com"...\line
+[INFO] Retrieving all VM class definitions from vCenter "source-vcenter.example.com"...\line
+[INFO] Retrieved 18 VM class definition(s).\line
+[INFO] Wrote 18 VM class definition(s) to "/Users/testuser/vmClasses-backup-source-vcenter.example.com.json".\line
+[INFO] Backup completed.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Sample output file ({\f1 vmClasses-backup-source-vcenter.example.com.json}):\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 [\line
+  \{\line
+    "name": "best-effort-2xlarge",\line
+    "cpuCount": 8,\line
+    "cpuCommitment": "bestEffort",\line
+    "memoryMB": 65536,\line
+    "memoryCommitment": "bestEffort"\line
+  \},\line
+  \{\line
+    "name": "custom-4cpu-8gb-a100",\line
+    "cpuCount": 4,\line
+    "cpuCommitment": "bestEffort",\line
+    "memoryMB": 8192,\line
+    "memoryCommitment": "bestEffort",\line
+    "vgpuDevices": [\{ "profileNames": ["nvidia-a100-40c"] \}]\line
+  \}\line
+]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Restore backup to a different vCenter\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 A backup file is a plain {\f1 vmClasses.json}-format array and can be passed directly to {\f1 -Action Update} on any vCenter.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action Update -VcenterServer dest-vcenter.example.com -VcenterUser administrator@vsphere.local `\line
+    -JsonPath ./vmClasses-backup-source-vcenter.example.com.json -VmClassName all\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+[INFO] Processing 18 VM class definition(s)...\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Backup with DynamicDirectPathIO warning\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action Backup -VcenterServer source-vcenter.example.com -VcenterUser administrator@vsphere.local\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "source-vcenter.example.com"...\line
+[INFO] Retrieving all VM class definitions from vCenter "source-vcenter.example.com"...\line
+[INFO] Retrieved 18 VM class definition(s).\line
+[INFO] Wrote 18 VM class definition(s) to "/Users/testuser/vmClasses-backup-source-vcenter.example.com.json".\line
+[INFO] Backup completed.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Specify JSON output path\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action Backup -VcenterServer vdest-vcenter.example.com -VcenterUser administrator@vsphere.local -JsonPath ./backup-20260329.json -Force\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[WARNING] Output file "./backup-20260329.json" already exists; overwriting (-Force).\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+[INFO] Retrieving all VM class definitions from vCenter "dest-vcenter.example.com"...\line
+[INFO] Retrieved 18 VM class definition(s).\line
+[INFO] Wrote 18 VM class definition(s) to "./backup-20260329.json".\line
+[INFO] Backup completed.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Discover all VM configurations non-interactively\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action Discover -VcenterServer source-vcenter.example.com" -VcenterUser administrator@vsphere.local -Force -SaveAll\line
+\line
+[WARNING] Output file "/Users/testuser/vmClasses.json" already exists; overwriting (-Force).\line
+\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "source-vcenter.example.com"...\line
+[INFO] Querying all VMs from vCenter "source-vcenter.example.com"...\line
+[INFO] Found 121 VM(s). Grouping by configuration...\line
+[INFO] Found 12 unique VM configuration(s).\line
+\line
+Class name format: \{N\}cpu-\{cpu-commitment\}-\{M\}mb-\{mem-commitment\}[-\{gpu-profile\}]\line
+  "guaranteed" = VMs in this group have a non-zero reservation; "besteffort" = no reservation.\line
+\line
+Class Name                           CPUs Memory (MB) CPU Reserved Mem Reserved VM Count\line
+----------                           ---- ----------- ------------ ------------ --------\line
+32cpu-besteffort-262144mb-besteffort   32 262,144     No           No                 51\line
+2cpu-besteffort-8192mb-besteffort       2 8,192       No           No                 20\line
+2cpu-besteffort-3072mb-besteffort       2 3,072       No           No                 13\line
+4cpu-besteffort-16384mb-besteffort      4 16,384      No           No                 11\line
+8cpu-besteffort-98304mb-besteffort      8 98,304      No           No                 10\line
+8cpu-besteffort-32768mb-besteffort      8 32,768      No           No                  4\line
+16cpu-besteffort-131072mb-besteffort   16 131,072     No           No                  4\line
+6cpu-guaranteed-24576mb-guaranteed      6 24,576      Yes          Yes                 3\line
+1cpu-besteffort-2048mb-besteffort       1 2,048       No           No                  2\line
+4cpu-besteffort-4096mb-besteffort       4 4,096       No           No                  1\line
+4cpu-besteffort-12288mb-besteffort      4 12,288      No           No                  1\line
+4cpu-besteffort-21504mb-besteffort      4 21,504      No           No                  1\line
+\line
+[INFO] Saving all 12 configuration(s) to "/Users/testuser/vmClasses.json" (-SaveAll).\line
+[INFO] Wrote 12 VM class definition(s) to "/Users/testuser/vmClasses.json".\line
+[INFO] Discover completed.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Error checking examples\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Fast fail if vCenter address is invalid; validates before asking for credentials\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 > ./Manage-VMClasses.ps1\line
+\line
+[INFO] Before connecting to your vCenter choose an action to perform.\line
+\line
+  Select an action below\line
+  Arrow keys=navigate  Enter=confirm  Esc=quit\line
+\line
+    Discover   Scan live VMs and generate vmClasses.json\line
+    List       Show all VM classes on vCenter\line
+    Backup     Save all VM classes from vCenter to a JSON file\line
+  > Update     Apply vmClasses.json to vCenter\line
+    Delete     Remove VM classes from vCenter\line
+    Help       Show usage documentation for this script\line
+    Quit       Exit without making any changes\line
+\line
+\line
+Enter your vCenter Server FQDN or IP address (or press 'c' to cancel): httptttt:/222\line
+[ERROR] "httptttt:/222" is not a valid FQDN or IPv4 address. Omit any scheme (https://), path, or port.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Check if output file exists before overwriting; fast fail if new path is invalid\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1\line
+\line
+[INFO] Before connecting to your vCenter choose an action to perform.\line
+\line
+  Select an action below\line
+  Arrow keys=navigate  Enter=confirm  Esc=quit\line
+\line
+  > Discover   Scan live VMs and generate vmClasses.json\line
+    List       Show all VM classes on vCenter\line
+    Backup     Save all VM classes from vCenter to a JSON file\line
+    Update     Apply vmClasses.json to vCenter\line
+    Delete     Remove VM classes from vCenter\line
+    Help       Show usage documentation for this script\line
+    Quit       Exit without making any changes\line
+\line
+\line
+[WARNING] Output file "/Users/testuser/vmClasses.json" already exists.\line
+Overwrite? Y=overwrite, N=enter new path, C=cancel: N\line
+\line
+Enter a new output file path: /foo/bar\line
+[ERROR] Directory "/foo" does not exist.\line
+Would you like to enter a different path? (Y/N):\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Wrong password; interactive re-prompt then user cancels\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action List -VcenterUser administrator@vsphere.local\line
+\line
+Enter your vCenter Server FQDN or IP address (or press 'c' to cancel): dest-vcenter.example.com\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+Enter your vCenter password: ################\line
+\line
+[ERROR] Authentication failed for vCenter "dest-vcenter.example.com".\line
+\line
+Would you like to re-enter your credentials? (Y/N): N\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Invalid {\f1 -VcenterServer} value; scheme included\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Validation runs before any connection attempt, so no password is requested.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action List -VcenterServer "https://dest-vcenter.example.com" -VcenterUser administrator@vsphere.local\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[ERROR] Manage-VMClasses failed: The -VcenterServer value "https://dest-vcenter.example.com" is not a valid FQDN or IPv4 address. Omit any scheme (https://), path, or port.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 vCenter not reachable on port 443; user declines to re-enter address\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action List -VcenterServer 192.168.1.99 -VcenterUser administrator@vsphere.local\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[ERROR] Cannot reach "192.168.1.99" on port 443 (timed out after 5000ms). Check network connectivity and firewall.\line
+\line
+Would you like to re-enter your vCenter FQDN or IP address? (Y/N): N\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 SSL certificate error with remediation steps\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Common in lab environments with self-signed certificates.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action List -VcenterServer dest-vcenter.example.com-VcenterUser administrator@vsphere.local\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+[ERROR] Failed to establish an SSL connection to vCenter "dest-vcenter.example.com".\line
+[ERROR] Common solutions:\line
+[ERROR]   1. Run: Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Confirm:$false\line
+[ERROR]   2. Run: [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12\line
+[ERROR]   3. Verify network connectivity to port 443 on "dest-vcenter.example.com".\line
+[ERROR] Full error: The SSL connection could not be established. See inner exception.\line
+[ERROR] Manage-VMClasses failed: Manage-VMClasses cannot continue. Check logs for details.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Malformed JSON file; syntax error with offending line shown\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 JSON validation runs before connecting to vCenter, so no password is requested.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action Update -VcenterServer dest-vcenter.example.com-VcenterUser administrator@vsphere.local\line
+[ERROR] Invalid vmClasses JSON in "/Users/testuser/vmClasses.json": Exception calling "Parse" with "1" argument(s): "'\\\\"' is invalid after a value. Expected either ',', '\}', or ']'. LineNumber: 4 | BytePositionInLine: 2."\line
+[ERROR]   Offending line 5:     "cpuCount": 4,\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The offending JSON (missing comma after {\f1 "name"} value on line 4):\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 [\line
+  \{\line
+    "name": "my-custom-class"\line
+    "cpuCount": 4,\line
+    "cpuCommitment": "bestEffort",\line
+    "memoryMB": 4096,\line
+    "memoryCommitment": "bestEffort"\line
+  \}\line
+]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 JSON content validation errors; multiple issues reported at once\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Content validation also runs before connecting to vCenter.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action Update -VcenterServer dest-vcenter.example.com-VcenterUser administrator@vsphere.local\line
+[ERROR] VM class "my-test-class" at index 0 (the JSON file) : missing required property "cpuCommitment" (any JSON key casing is accepted, for example cpuCommitment).\line
+[ERROR] VM class "another-class" at index 1 (the JSON file) : cpuCount must be between 1 and 64 inclusive; got 0.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 {\f1 -VmClassName} does not match any entry in the JSON file\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Name resolution also runs before connecting to vCenter. Valid names from the file are listed to help correct the typo.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action Update -VcenterServer dest-vcenter.example.com-VcenterUser administrator@vsphere.local -VmClassName nonexistent-class\line
+[ERROR] No entry in "/Users/testuser/vmClasses.json" matches "nonexistent-class". The name must match a "name" property in the file. Names defined in the file: 4cpu-besteffort-4096mb-besteffort, 6cpu-guaranteed-24576mb-guaranteed\line
+\line
+Enter a different VM class name? (Y/N): N\line
+[INFO] Exiting at user request.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Delete: target class not found on vCenter\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action Delete -VcenterServer dest-vcenter.example.com-VcenterUser administrator@vsphere.local -VmClassName my-removed-class\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+[ERROR] VM class "my-removed-class" was not found on vCenter "dest-vcenter.example.com". Run -Action List to see available VM class names.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Update: attempting to modify a built-in default class; user declines\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ./Manage-VMClasses.ps1 -Action Update -VcenterServer dest-vcenter.example.com-VcenterUser administrator@vsphere.local -VmClassName best-effort-large\line
+[ADVISORY] Using vCenter password from $env:VCENTER_PASSWORD. Unset the variable to be prompted interactively.\line
+[INFO] Connecting to vCenter "dest-vcenter.example.com"...\line
+[WARNING] VM class "best-effort-large" matches a built-in vCenter default class name.\line
+        Proceed with modifying this default class? [y/N]: N\line
+[INFO] Skipping VM class "best-effort-large" (user declined to modify a built-in default).\par}
+}
