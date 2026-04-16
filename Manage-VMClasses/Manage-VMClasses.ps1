@@ -1193,7 +1193,7 @@ Function Get-VmClassScriptVcenterPasswordSecureString {
     Param ()
 
     if (-not [string]::IsNullOrWhiteSpace($env:VCENTER_PASSWORD)) {
-        Write-LogMessage -Type ADVISORY -Message "Using vCenter password from `$env:VCENTER_PASSWORD. Unset the variable to be prompted interactively."
+        Write-LogMessage -Type DEBUG -Message "Using vCenter password from `$env:VCENTER_PASSWORD. Unset the variable to be prompted interactively."
         return ConvertTo-SecureString -String $env:VCENTER_PASSWORD -AsPlainText -Force
     }
 
@@ -2179,8 +2179,9 @@ Function Get-TuiVmClassSelection {
         List of VM class names to display as selectable rows.
 
         .PARAMETER DefaultSelectAll
-        When set, all rows are pre-selected and the cursor starts on the "Select All" row,
-        so the user can press Enter immediately to import every class.
+        When set, all rows are pre-selected and the cursor starts on the first class row so the
+        list is visible before Enter confirms. Any keys buffered from a prior prompt (for example
+        the main action menu) are flushed before reading input.
 
         .OUTPUTS
         System.String[] — selected class names (never empty).
@@ -2195,8 +2196,16 @@ Function Get-TuiVmClassSelection {
         [Parameter(Mandatory = $false)] [Switch]$DefaultSelectAll
     )
 
+    try {
+        if ($null -ne $Host -and $null -ne $Host.UI -and $null -ne $Host.UI.RawUI) {
+            $Host.UI.RawUI.FlushInputBuffer()
+        }
+    } catch {
+        Write-LogMessage -Type DEBUG -Message "FlushInputBuffer before VM class TUI failed (ignored): $($_.Exception.Message)"
+    }
+
     $selectedFlags = [bool[]]::new($ClassNames.Count)
-    $currentIndex = if ($DefaultSelectAll) { -1 } else { 0 }
+    $currentIndex = 0
     if ($DefaultSelectAll) {
         for ($i = 0; $i -lt $selectedFlags.Count; $i++) { $selectedFlags[$i] = $true }
     }
@@ -2312,14 +2321,19 @@ Function Get-UserVmClassSelection {
         -VmClassName to be passed explicitly.
 
         .PARAMETER DefaultSelectAll
-        When set, all rows are pre-selected and the cursor starts on the "Select All" row.
-        Use for the import workflow where the intent is to apply every class.
+        When set, all rows are pre-selected and the cursor starts on the first class row.
+        Use for the import workflow where the intent is to apply every class after explicit confirmation.
 
         .PARAMETER JsonFilePath
         Path to the VM classes JSON file (must exist).
 
         .PARAMETER Action
         Update — used in error messaging.
+
+        .PARAMETER SkipHeaderMessages
+        When set, omits the INFO lines and surrounding blank lines that name the action and JSON path.
+        Use when the caller already displayed the same path (for example after the user declined to
+        pick a different VM class file).
 
         .OUTPUTS
         System.String[] — selected class names (never empty).
@@ -2329,9 +2343,10 @@ Function Get-UserVmClassSelection {
     #>
 
     Param (
+        [Parameter(Mandatory = $true)]  [ValidateSet("Update")] [String]$Action,
         [Parameter(Mandatory = $false)] [Switch]$DefaultSelectAll,
         [Parameter(Mandatory = $true)]  [ValidateNotNullOrEmpty()] [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })] [String]$JsonFilePath,
-        [Parameter(Mandatory = $true)]  [ValidateSet("Update")] [String]$Action
+        [Parameter(Mandatory = $false)] [Switch]$SkipHeaderMessages
     )
 
     Write-LogMessage -Type DEBUG -Message "Entered Get-UserVmClassSelection function..."
@@ -2347,10 +2362,12 @@ Function Get-UserVmClassSelection {
 
     $classNames = @($entries | ForEach-Object { Get-VmClassJsonEntryName -Entry $_ })
 
-    Write-Host ""
-    Write-LogMessage -Type INFO -Message "Select VM class(es) to $($Action.ToLowerInvariant()):"
-    Write-LogMessage -Type INFO -Message "Source file: `"$JsonFilePath`""
-    Write-Host ""
+    if (-not $SkipHeaderMessages.IsPresent) {
+        Write-Host ""
+        Write-LogMessage -Type INFO -Message "Select VM class(es) to $($Action.ToLowerInvariant()):"
+        Write-LogMessage -Type INFO -Message "Source file: `"$JsonFilePath`""
+        Write-Host ""
+    }
 
     try {
         return @(Get-TuiVmClassSelection -ClassNames $classNames -DefaultSelectAll:$DefaultSelectAll)
@@ -4139,7 +4156,10 @@ Function Invoke-WorkflowVcenterConnect {
         password prompt, and Connect-VIServer. Re-prompts on any failure. Use -Label to
         include "source" or "destination" in connection messages. The INFO line asking you to
         connect is skipped when PowerCLI already has an active session to that same vCenter
-        (FQDN or IP, case-insensitive).
+        (FQDN or IP, case-insensitive). It is also skipped when the address and username are
+        already known (no FQDN prompt) and VCENTER_PASSWORD is set, so there is nothing left to
+        type before connecting. Blank lines before the password and connecting messages are
+        reduced in that same fully specified case.
 
         .PARAMETER InitialServer
         When set, used as the vCenter address without prompting until cleared (for example after a
@@ -4172,6 +4192,7 @@ Function Invoke-WorkflowVcenterConnect {
 
     $labelPhrase = if (-not [string]::IsNullOrWhiteSpace($Label)) { "$Label " } else { "" }
     $EmittedPleaseConnectBanner = $false
+    $usedInteractiveVcenterFqdnPrompt = $false
 
     $server = ""
     if (-not [string]::IsNullOrWhiteSpace($InitialServer)) {
@@ -4193,6 +4214,7 @@ Function Invoke-WorkflowVcenterConnect {
     while ($true) {
         if ([string]::IsNullOrWhiteSpace($server)) {
             try {
+                $usedInteractiveVcenterFqdnPrompt = $true
                 $fqdnParams = @{}
                 if ($ReturnToMenuOnCancel.IsPresent) {
                     $fqdnParams["ReturnToMenuOnCancel"] = $true
@@ -4204,8 +4226,15 @@ Function Invoke-WorkflowVcenterConnect {
             }
         }
 
+        $hasEnvVcenterPassword = -not [string]::IsNullOrWhiteSpace($env:VCENTER_PASSWORD)
+        $skipPleaseConnectBanner = (
+            $hasEnvVcenterPassword -and
+            -not [string]::IsNullOrWhiteSpace($user) -and
+            -not $usedInteractiveVcenterFqdnPrompt
+        )
+
         if (-not (Test-IsAlreadyConnectedToVcenterServer -ServerName $server)) {
-            if (-not $EmittedPleaseConnectBanner) {
+            if (-not $EmittedPleaseConnectBanner -and -not $skipPleaseConnectBanner) {
                 Write-Host ""
                 Write-LogMessage -Type INFO -AppendNewLine -Message "Please connect to your ${labelPhrase}vCenter to continue."
                 $EmittedPleaseConnectBanner = $true
@@ -4233,10 +4262,16 @@ Function Invoke-WorkflowVcenterConnect {
             $user = Get-InteractiveVcenterUsername
         }
 
-        Write-Host ""
+        if (-not $hasEnvVcenterPassword) {
+            Write-Host ""
+        }
+
         $password = Get-VmClassScriptVcenterPasswordSecureString
         $credential = New-Object System.Management.Automation.PSCredential($user, $password)
-        Write-Host ""
+        if (-not $hasEnvVcenterPassword) {
+            Write-Host ""
+        }
+
         Write-LogMessage -Type INFO -Message "Connecting to ${labelPhrase}vCenter `"$server`"..."
         $connectResult = Connect-Vcenter -AllowVcenterAddressRetry -ServerCredential $credential -ServerName $server
         if ($connectResult -eq $SCRIPT:CONNECT_VCENTER_RETRY_VCENTER_ADDRESS) {
@@ -4502,7 +4537,7 @@ Function Invoke-CreateVmClass {
 
     if (-not $PSCmdlet.ShouldProcess($EntryName, "Create VM class on vCenter `"$VcenterServer`"")) {
         Write-LogMessage -Type INFO -Message "WhatIf: would create VM class `"$EntryName`"."
-        return
+        return $false
     }
 
     try {
@@ -4517,6 +4552,7 @@ Function Invoke-CreateVmClass {
             -SkipCertificateCheck `
             -ErrorAction Stop
         Write-LogMessage -Type INFO -CompletePending -Message "Succeeded"
+        return $true
     } catch {
         $failureText = Get-VmClassErrorRecordDiagnosticText -ErrorRecord $_
         Write-LogMessage -Type ERROR -CompletePending -Message "Failed"
@@ -4575,13 +4611,13 @@ Function Invoke-PatchVmClass {
 
     if (-not $PSCmdlet.ShouldProcess($EntryName, "Update VM class on vCenter `"$VcenterServer`"")) {
         Write-LogMessage -Type INFO -Message "WhatIf: would update VM class `"$EntryName`" on vCenter to match `"$(Split-Path -Leaf $ResolvedJsonPath)`"."
-        return
+        return $false
     }
 
     Write-LogMessage -Type INFO -NoNewline -Message "Updating VM class `"$EntryName`" on vCenter to match `"$(Split-Path -Leaf $ResolvedJsonPath)`"... "
     if ($compareResult.Equal) {
         Write-LogMessage -Type INFO -CompletePending -Message "Skipped (vCenter already matches the file)"
-        return
+        return $false
     }
 
     try {
@@ -4596,6 +4632,7 @@ Function Invoke-PatchVmClass {
             -SkipCertificateCheck `
             -ErrorAction Stop
         Write-LogMessage -Type INFO -CompletePending -Message "Succeeded"
+        return $true
     } catch {
         $updateFailureText = Get-VmClassErrorRecordDiagnosticText -ErrorRecord $_
         Write-LogMessage -Type ERROR -CompletePending -Message "Failed"
@@ -4609,6 +4646,10 @@ Function Invoke-UpdateVmClassEntry {
         .SYNOPSIS
         Processes a single VM class entry: queries vCenter for its current state, then creates,
         patches, or skips based on the comparison result.
+
+        .OUTPUTS
+        System.Boolean — $true when a create or patch API call succeeded; $false when the entry was
+        skipped, declined, already matched vCenter, or WhatIf avoided a mutation.
 
         .PARAMETER Entry
         Validated JSON entry object for the VM class.
@@ -4648,21 +4689,20 @@ Function Invoke-UpdateVmClassEntry {
             $confirmOverride = (Read-Host "        Proceed with modifying this default class? [y/N]").Trim()
             if ($confirmOverride -notmatch $SCRIPT:VmClassInteractiveAffirmativeResponseRegexPattern) {
                 Write-LogMessage -Type INFO -Message "Skipping VM class `"$entryName`" (user declined to modify a built-in default)."
-                return
+                return $false
             }
         }
     }
 
     if ($null -eq $existingClassItem) {
-        Invoke-CreateVmClass `
+        return Invoke-CreateVmClass `
             -Entry $Entry `
             -EntryName $entryName `
             -RestApiSessionToken $RestApiSessionToken `
             -VcenterServer $VcenterServer
-        return
     }
 
-    Invoke-PatchVmClass `
+    return Invoke-PatchVmClass `
         -Entry $Entry `
         -EntryName $entryName `
         -ExistingClassItem $existingClassItem `
@@ -4676,6 +4716,10 @@ Function Invoke-UpdateAction {
         .SYNOPSIS
         Executes the Update action: applies VM class definitions from a JSON file to vCenter as an
         upsert (create new, patch changed, skip matching).
+
+        .OUTPUTS
+        System.Int32 — Count of VM classes that were created or patched on vCenter (skipped matches,
+        WhatIf, and user-declined built-in overrides do not increment the count).
 
         .PARAMETER Credential
         PSCredential used to establish the REST API session for create/patch operations.
@@ -4716,18 +4760,21 @@ Function Invoke-UpdateAction {
     $restApiSessionToken = New-VmClassRestApiSession -VcenterServer $Server -Credential $Credential
     Write-LogMessage -Type DEBUG -Message "vCenter REST API session established for Create/Update operations."
 
+    $mutationCount = 0
     try {
         foreach ($entry in $updateEntries) {
-            Invoke-UpdateVmClassEntry `
+            $mutationCount += [int](Invoke-UpdateVmClassEntry `
                 -Entry $entry `
                 -ResolvedJsonPath $ResolvedJsonPath `
                 -RestApiSessionToken $restApiSessionToken `
-                -VcenterServer $Server
+                -VcenterServer $Server)
         }
     } finally {
         Remove-VmClassRestApiSession -VcenterServer $Server -SessionToken $restApiSessionToken
         Write-LogMessage -Type DEBUG -Message "vCenter REST API session closed."
     }
+
+    return $mutationCount
 }
 Function Invoke-DeleteAction {
 
@@ -4835,7 +4882,8 @@ Function Invoke-DiscoverWorkflow {
         .SYNOPSIS
         Full guided workflow starting from Discover: connects to a source vCenter to scan VMs and
         generate a vmClasses JSON, then optionally imports to the same source vCenter or connects
-        to a separate destination vCenter to back up, import, and re-backup VM classes.
+        to a separate destination vCenter to back up, import, and take a post-import backup only
+        when the import created or patched at least one VM class.
 
         .PARAMETER ConfirmedJsonPath
         Output JSON path already confirmed by the caller. The caller is responsible for calling
@@ -4944,17 +4992,29 @@ Function Invoke-DiscoverWorkflow {
         }
 
         $null = Get-VmClassJsonValidatedEntryList -JsonFilePath $importPath
-        $selectedNames = @(Get-UserVmClassSelection -DefaultSelectAll -JsonFilePath $importPath -Action "Update")
-        Invoke-UpdateAction `
+        $getUserVmClassSelectionParams = @{
+            Action           = "Update"
+            DefaultSelectAll = $true
+            JsonFilePath     = $importPath
+        }
+        if ($altChoice -eq "N") {
+            $getUserVmClassSelectionParams["SkipHeaderMessages"] = $true
+        }
+        $selectedNames = @(Get-UserVmClassSelection @getUserVmClassSelectionParams)
+        $updateMutationCount = Invoke-UpdateAction `
             -Credential $targetConn.Credential `
             -ResolvedJsonPath $importPath `
             -ResolvedVmClassNames $selectedNames `
             -Server $targetConn.ServerName
 
-        Invoke-KeyPause -NextStep "Backup (post-import) - Save all VM classes from vCenter to a JSON file"
+        if ($updateMutationCount -gt 0) {
+            Invoke-KeyPause -NextStep "Backup (post-import) - Save all VM classes from vCenter to a JSON file"
 
-        $postBackupPath = Get-WorkflowBackupJsonPath -Qualifier "post" -Server $targetConn.ServerName
-        Invoke-BackupAction -ConfirmedJsonPath $postBackupPath -Server $targetConn.ServerName
+            $postBackupPath = Get-WorkflowBackupJsonPath -Qualifier "post" -Server $targetConn.ServerName
+            Invoke-BackupAction -ConfirmedJsonPath $postBackupPath -Server $targetConn.ServerName
+        } else {
+            Write-LogMessage -Type INFO -Message "Skipping post-import backup: no VM class was created or patched (vCenter already matched the selected JSON entries)."
+        }
     } finally {
         Write-InteractiveWorkflowDisconnectNotice -VcenterFqdn $targetConn.ServerName
         Disconnect-Vcenter -ServerName $targetConn.ServerName -Silence
@@ -5019,8 +5079,8 @@ Function Invoke-ListWorkflow {
     <#
         .SYNOPSIS
         Workflow for the List menu entry: connects to destination vCenter, lists all VM classes,
-        and optionally takes a pre-import backup, runs an import, takes a post-import backup, then
-        prompts whether to return to the main menu.
+        and optionally takes a pre-import backup, runs an import, takes a post-import backup when
+        the import changed vCenter, then prompts whether to return to the main menu.
 
         .PARAMETER DefaultVcenterServer
         Optional default vCenter FQDN or IP from the command line or menu session.
@@ -5090,18 +5150,30 @@ Function Invoke-ListWorkflow {
         }
 
         $null = Get-VmClassJsonValidatedEntryList -JsonFilePath $importPath
-        $selectedNames = @(Get-UserVmClassSelection -DefaultSelectAll -JsonFilePath $importPath -Action "Update")
-        Invoke-UpdateAction `
+        $getUserVmClassSelectionParams = @{
+            Action           = "Update"
+            DefaultSelectAll = $true
+            JsonFilePath     = $importPath
+        }
+        if ($altChoice -eq "N") {
+            $getUserVmClassSelectionParams["SkipHeaderMessages"] = $true
+        }
+        $selectedNames = @(Get-UserVmClassSelection @getUserVmClassSelectionParams)
+        $updateMutationCount = Invoke-UpdateAction `
             -Credential $conn.Credential `
             -ResolvedJsonPath $importPath `
             -ResolvedVmClassNames $selectedNames `
             -Server $conn.ServerName
 
-        Invoke-KeyPause -NextStep "Backup (post-import) - Save all VM classes from vCenter to a JSON file"
-
-        $postBackupPath = Get-WorkflowBackupJsonPath -Qualifier "post" -Server $conn.ServerName
-        Invoke-BackupAction -ConfirmedJsonPath $postBackupPath -Server $conn.ServerName
         $didImport = $true
+        if ($updateMutationCount -gt 0) {
+            Invoke-KeyPause -NextStep "Backup (post-import) - Save all VM classes from vCenter to a JSON file"
+
+            $postBackupPath = Get-WorkflowBackupJsonPath -Qualifier "post" -Server $conn.ServerName
+            Invoke-BackupAction -ConfirmedJsonPath $postBackupPath -Server $conn.ServerName
+        } else {
+            Write-LogMessage -Type INFO -Message "Skipping post-import backup: no VM class was created or patched (vCenter already matched the selected JSON entries)."
+        }
     } finally {
         Write-InteractiveWorkflowDisconnectNotice -VcenterFqdn $conn.ServerName
         Disconnect-Vcenter -ServerName $conn.ServerName -Silence
@@ -5123,8 +5195,9 @@ Function Invoke-UpdateWorkflow {
 
     <#
         .SYNOPSIS
-        Workflow for the Update menu entry: connects to source vCenter, imports VM classes, and
-        optionally removes VM classes and lists the final state.
+        Workflow for the Update menu entry: connects to source vCenter, confirms which JSON file to
+        use (same default path and alternate-file Y/N as the Discover workflow import phase), runs
+        the VM class multi-select table, applies updates, then prompts whether to return to the main menu.
 
         .PARAMETER DefaultVcenterServer
         Optional default vCenter FQDN or IP from the command line or menu session.
@@ -5163,29 +5236,33 @@ Function Invoke-UpdateWorkflow {
 
     try {
         $importPath = Get-InteractiveJsonPath -InitialResolvedPath $InitialJsonPath -TreatInitialPathAsOptionalDefault
+        $jsonFile = Split-Path -Leaf $importPath
+
+        Write-LogMessage -Type INFO -AppendNewLine -Message "The default VM class file is `"$importPath`"."
+        $altChoice = $null
+        while ($altChoice -ne "Y" -and $altChoice -ne "N") {
+            $altChoice = (Read-Host "Use a different VM class file instead of `"$jsonFile`"? [Y/N]").Trim().ToUpper()
+        }
+        if ($altChoice -eq "Y") {
+            $importPath = Get-InteractiveJsonPath -ForcePrompt -InitialResolvedPath $importPath
+        }
+
         $null = Get-VmClassJsonValidatedEntryList -JsonFilePath $importPath
 
-        $selectedNames = @(Get-UserVmClassSelection -DefaultSelectAll -JsonFilePath $importPath -Action "Update")
-        Invoke-UpdateAction `
+        $getUserVmClassSelectionParams = @{
+            Action           = "Update"
+            DefaultSelectAll = $true
+            JsonFilePath     = $importPath
+        }
+        if ($altChoice -eq "N") {
+            $getUserVmClassSelectionParams["SkipHeaderMessages"] = $true
+        }
+        $selectedNames = @(Get-UserVmClassSelection @getUserVmClassSelectionParams)
+        $null = Invoke-UpdateAction `
             -Credential $conn.Credential `
             -ResolvedJsonPath $importPath `
             -ResolvedVmClassNames $selectedNames `
             -Server $conn.ServerName
-
-        Write-Host ""
-        $deleteChoice = $null
-        while ($deleteChoice -ne "Y" -and $deleteChoice -ne "N") {
-            $deleteChoice = (Read-Host "Would you like to remove a VM class? [Y/N]").Trim().ToUpper()
-        }
-        if ($deleteChoice -eq "N") {
-            return $true
-        }
-
-        $deleteNames = @(Get-UserCustomVmClassSelectionFromServer -Server $conn.ServerName)
-        Invoke-DeleteAction -ResolvedVmClassNames $deleteNames -Server $conn.ServerName
-
-        Invoke-KeyPause -NextStep "List - Show all VM classes on vCenter"
-        Invoke-ListAction -Server $conn.ServerName
     } finally {
         Write-InteractiveWorkflowDisconnectNotice -VcenterFqdn $conn.ServerName
         Disconnect-Vcenter -ServerName $conn.ServerName -Silence
@@ -5274,6 +5351,8 @@ Function Invoke-DeleteWorkflow {
 # =============================================================================
 $SCRIPT:ConfiguredLogLevel = $LogLevel
 New-LogFile
+
+try {
 
 if ([string]::IsNullOrWhiteSpace($Action)) {
     # Discard any keypresses buffered during startup so they cannot accidentally
@@ -5466,9 +5545,9 @@ try {
         "Update" {
             $selectedNames = [string[]]@()
             if ([string]::IsNullOrWhiteSpace($VmClassName)) {
-                $selectedNames = @(Get-UserVmClassSelection -DefaultSelectAll -JsonFilePath $resolvedJsonPath -Action "Update")
+                $selectedNames = @(Get-UserVmClassSelection -Action "Update" -DefaultSelectAll -JsonFilePath $resolvedJsonPath)
             }
-            Invoke-UpdateAction `
+            $null = Invoke-UpdateAction `
                 -Credential $credentialToUse `
                 -ResolvedJsonPath $resolvedJsonPath `
                 -ResolvedVmClassNames $selectedNames `
@@ -5491,6 +5570,7 @@ try {
 } catch {
     Write-LogMessage -Type ERROR -Message "Manage-VMClasses failed: $($_.Exception.Message)"
     throw
+}
 } finally {
     try {
         Disconnect-Vcenter -AllServers -Silence
